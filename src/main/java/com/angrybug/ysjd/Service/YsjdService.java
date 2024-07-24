@@ -1,7 +1,6 @@
 package com.angrybug.ysjd.Service;
 
 import com.angrybug.ysjd.DTO.BriefPatientInfo;
-import com.angrybug.ysjd.DTO.SimulationResult;
 import com.angrybug.ysjd.Entity.Patient;
 import com.angrybug.ysjd.Entity.Simulation;
 import com.angrybug.ysjd.Repository.PatientRepository;
@@ -12,8 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.zxing.WriterException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -29,8 +28,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 @Service
 public class YsjdService {
@@ -46,6 +44,10 @@ public class YsjdService {
 
     @Autowired
     private QRService qrService;
+
+    @Value("${service.api3url}")
+    private String QRURL;
+
 
     public Patient createPatient(
             String name, String birthdate, Long sex, Long weight, Long height, String bloodPressure, String pastDiseases, String currentMedications, String allergies, String familyHistory, String symtoms, String onset, Long painSize
@@ -70,8 +72,6 @@ public class YsjdService {
         patient.setSymptoms(symtoms);
         patient.setOnset(onset);
         patient.setPainLevel(painSize);
-
-
 
         return patientRepository.save(patient);
     }
@@ -118,16 +118,12 @@ public class YsjdService {
             BriefPatientInfo briefPatientInfo = new BriefPatientInfo(patient.getPatientId(), patient.getName(), parsedDate, patient.getSex());
             briefPatientInfoList.add(briefPatientInfo);
         }
-
         return briefPatientInfoList;
-
     }
 
 
     private String parseOriginDate(Date birthdate) {
-
         SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd");
-
         return sdf.format(birthdate);
     }
 
@@ -154,7 +150,6 @@ public class YsjdService {
                     return objectMapper.writeValueAsString(objectNode);
                 }
 
-
                 return null;
             }catch (Exception e){
                 e.printStackTrace();
@@ -162,14 +157,6 @@ public class YsjdService {
         }
         return null;
     }
-
-
-
-
-
-
-
-
 
 
 
@@ -241,7 +228,7 @@ public class YsjdService {
     }
 
     private byte[] createQRCode(Long id){
-        String url = "http://localhost:3000/result/" + id;
+        String url = QRURL + id;
         int width = 200;
         int height = 200;
 

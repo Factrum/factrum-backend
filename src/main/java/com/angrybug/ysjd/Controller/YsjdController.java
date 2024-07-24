@@ -22,55 +22,51 @@ public class YsjdController {
     @Autowired
     private YsjdService ysjdService;
 
-//    @GetMapping("/hello")
-//    public String Test() {
-//        System.out.println("hello");
-//        return "good";
-//    }
-//
-//
-//    @PostMapping("/hello")
-//    public String Test2(@RequestBody Test test){
-//        System.out.println(test.name);
-//        System.out.println(test.father);
-//        System.out.println(test.mother);
-//        return "good2";
-//    }
-
-
     //API1. 환자 정보 입력
     @PostMapping("/patient/info")
     public ResponseEntity<String> createPatient(@RequestBody PatientInfo patientInfo)
     {
-        Patient patient = ysjdService.createPatient(
-                        patientInfo.getName(),
-                        patientInfo.getBirthdate(),
-                        patientInfo.getGenderNumber(),
-                        patientInfo.getWeight(),
-                        patientInfo.getHeight(),
-                        patientInfo.getBloodPressure(),
-                        patientInfo.getPastDiseases(),
-                        patientInfo.getCurrentMedications(),
-                        patientInfo.getAllergies(),
-                        patientInfo.getFamilyHistory(),
-                        patientInfo.getSymptoms(),
-                        patientInfo.getOnset(),
-                        patientInfo.getPainLevel()
-        );
 
-        return ResponseEntity.ok("Success");
+        try{
+            Patient patient = ysjdService.createPatient(
+                    patientInfo.getName(),
+                    patientInfo.getBirthdate(),
+                    patientInfo.getGenderNumber(),
+                    patientInfo.getWeight(),
+                    patientInfo.getHeight(),
+                    patientInfo.getBloodPressure(),
+                    patientInfo.getPastDiseases(),
+                    patientInfo.getCurrentMedications(),
+                    patientInfo.getAllergies(),
+                    patientInfo.getFamilyHistory(),
+                    patientInfo.getSymptoms(),
+                    patientInfo.getOnset(),
+                    patientInfo.getPainLevel()
+            );
+
+            return ResponseEntity.ok("Success");
+        }
+        catch(Exception e){
+            return ResponseEntity.ok("error");
+        }
+
     }
 
     //API2. 환자 리스트 반환
     @GetMapping("/patient/list")
     public ResponseEntity<Map<String, List<BriefPatientInfo>>> findPatientsList()
     {
-        List<BriefPatientInfo> patientList = ysjdService.findPatientList();
+        try {
+            List<BriefPatientInfo> patientList = ysjdService.findPatientList();
 
-        Map<String, List<BriefPatientInfo>> response = new HashMap<>();
-        response.put("patientList", patientList);
+            Map<String, List<BriefPatientInfo>> response = new HashMap<>();
+            response.put("patientList", patientList);
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        }
+        catch (Exception e){
+            return ResponseEntity.ok(null);
+        }
     }
 
     //API3. 환자 리스트 반환
@@ -78,24 +74,36 @@ public class YsjdController {
     public ResponseEntity<Optional<Patient>> findPatientInfo(@PathVariable Long id)
     {
 
-        Optional<Patient> patient = ysjdService.findPatientInfo(id);
+        try{
+            Optional<Patient> patient = ysjdService.findPatientInfo(id);
 
-        if (patient.isPresent()) {
-            return ResponseEntity.ok(patient);
+            if (patient.isPresent()) {
+                return ResponseEntity.ok(patient);
+            }
+            else {
+                return ResponseEntity.ok(null);
+            }
         }
-        else {
+        catch (Exception e) {
             return ResponseEntity.ok(null);
         }
+
     }
 
     //API4. 시뮬레이션 생성
     @PostMapping("/simulation/result")
     public ResponseEntity<String> createSimulation(@RequestBody SimulationInfo simulationInfo)
     {
+        String simulationResult = null;
 
-        String simulationResult = ysjdService.createSimulation(simulationInfo.getId(), simulationInfo.getName());
+        try{
+            simulationResult = ysjdService.createSimulation(simulationInfo.getId(), simulationInfo.getName());
 
-        return ResponseEntity.ok(simulationResult);
+            return ResponseEntity.ok(simulationResult);
+        }catch(Exception e){
+            return ResponseEntity.ok("error");
+        }
+
     }
 
     //API5. 시뮬레이션 선택 결과저장
@@ -112,49 +120,29 @@ public class YsjdController {
 
             byte[] qrcode = ysjdService.saveSimulationResult(simulationResult.getId(), tempScenario);
 
-            writeToFile("test", qrcode);
-
-
             return ResponseEntity.ok(qrcode);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            return null;
         }
 
-        return null;
-
-    }
-
-    public void writeToFile(String filename, byte[] pData){
-        if(pData == null){
-            return;
-        }
-        int lByteArraySize = pData.length;
-        System.out.println(filename);
-        try{
-            File lOutFile = new File("./"+filename+".jpg");
-            FileOutputStream lFileOutputStream = new FileOutputStream(lOutFile);
-            lFileOutputStream.write(pData);
-            lFileOutputStream.close();
-        }catch(Throwable e){
-            e.printStackTrace(System.out);
-        }
     }
 
     //API6. 선별된 시나리오 설명 생성
     @PostMapping("/simulation/patient")
     public ResponseEntity<String> createSelectedSimulation(@RequestBody SelectedSimulationResultRequest selectedSimulationResultRequest) {
 
+        String simulationResult = null;
 
-        String simulationResult = ysjdService.createSelectedSimulation(selectedSimulationResultRequest.getId(), selectedSimulationResultRequest.getExplainType());
+        try{
+            simulationResult = ysjdService.createSelectedSimulation(selectedSimulationResultRequest.getId(), selectedSimulationResultRequest.getExplainType());
 
-        return ResponseEntity.ok(simulationResult);
-
-
+            return ResponseEntity.ok(simulationResult);
+        }
+        catch(Exception e){
+            return ResponseEntity.ok("error");
+        }
 
     }
-
-
-
 
 }
