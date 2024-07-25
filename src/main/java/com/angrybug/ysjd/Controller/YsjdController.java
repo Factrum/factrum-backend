@@ -22,6 +22,13 @@ public class YsjdController {
     @Autowired
     private YsjdService ysjdService;
 
+    @GetMapping("/test")
+    public String test()
+    {
+        return "test success";
+    }
+
+
     //API1. 환자 정보 입력
     @PostMapping("/patient/info")
     public ResponseEntity<String> createPatient(@RequestBody PatientInfo patientInfo)
