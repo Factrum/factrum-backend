@@ -205,9 +205,10 @@ public class YsjdService {
         return null;
     }
 
-    public byte[] saveSimulationResult(Long id, String scenario) {
+    public String saveSimulationResult(Long id, String scenario) {
 
         Simulation simulation = new Simulation();
+        Simulation savedSimulation = null;
 
         // Frame 설정
         if (id != null) {
@@ -216,14 +217,33 @@ public class YsjdService {
         }
 
         simulation.setScenario(scenario);
-        Simulation savedSimulation = simulationRepository.save(simulation);
 
-        Long patientId = savedSimulation.getPatientId().getPatientId();
+        //해당 환자가 이미 simulation 결과가 있다면 update
+        List<Simulation> simulationList = simulationRepository.findByPatientId(simulation.getPatientId().getPatientId());
 
-        //QR코드 id어떤거 전달할지 결정하기
-        byte[] qrcode = createQRCode(patientId);
+        System.out.println("hello");
+        System.out.println(simulationList);
 
-        return qrcode;
+        if(!simulationList.isEmpty()){
+            System.out.println(simulationList.getFirst().getPatientId());
+
+            //해당 환자 update()
+            Simulation existingSimulation = simulationList.getLast();
+            existingSimulation.setScenario(scenario);
+
+            simulationRepository.save(existingSimulation);
+
+            System.out.println("hello2");
+
+        }
+        //해당 환자가 simulation 결과가 없으면 save
+        else{
+            simulationRepository.save(simulation);
+
+            System.out.println("hello3");
+        }
+
+        return "Success";
 
     }
 
