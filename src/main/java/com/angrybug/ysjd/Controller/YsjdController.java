@@ -78,13 +78,13 @@ public class YsjdController {
 
     //API3. 환자 리스트 반환
     @GetMapping("/simulation/info/{id}")
-    public ResponseEntity<Optional<Patient>> findPatientInfo(@PathVariable Long id)
+    public ResponseEntity<Patient> findPatientInfo(@PathVariable Long id)
     {
 
         try{
-            Optional<Patient> patient = ysjdService.findPatientInfo(id);
+           Patient patient = ysjdService.findPatientInfo(id);
 
-            if (patient.isPresent()) {
+            if (patient != null) {
                 return ResponseEntity.ok(patient);
             }
             else {
