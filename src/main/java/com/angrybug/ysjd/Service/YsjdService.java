@@ -45,16 +45,32 @@ public class YsjdService {
     @Autowired
     private QRService qrService;
 
+    @Autowired
+    private EncryptionService encryptionService;
+
+    public String encryptName(String name) throws Exception {
+        return encryptionService.encrypt(name);
+    }
+
+    public String decryptName(String encryptedName) throws Exception {
+        return encryptionService.decrypt(encryptedName);
+    }
+
+
     @Value("${service.api3url}")
     private String QRURL;
 
 
     public Patient createPatient(
             String name, String birthdate, Long sex, Long weight, Long height, String bloodPressure, String pastDiseases, String currentMedications, String allergies, String familyHistory, String symtoms, String onset, Long painSize
-    )
-    {
+    ) throws Exception {
+
+        System.out.println("hello");
+
         Patient patient = new Patient();
-        patient.setName(name);
+
+
+        patient.setName(encryptName(name));
 
         Date sqlBirthDate = parseSqlDate(birthdate);
         patient.setBirthdate(sqlBirthDate);
@@ -73,7 +89,10 @@ public class YsjdService {
         patient.setOnset(onset);
         patient.setPainLevel(painSize);
 
-        return patientRepository.save(patient);
+        Patient savedPatient = patientRepository.save(patient);
+        savedPatient.setName(decryptName(savedPatient.getName()));
+
+        return savedPatient;
     }
 
     private Date parseSqlDate(String birthdate) {
@@ -107,15 +126,16 @@ public class YsjdService {
         return sexStr;
     }
 
-    public List<BriefPatientInfo> findPatientList() {
+    public List<BriefPatientInfo> findPatientList() throws Exception {
 
         List<Patient> patientList = patientRepository.findAll();
 
         List<BriefPatientInfo> briefPatientInfoList = new ArrayList<>();
 
         for (Patient patient : patientList) {
+            String decryptedName = decryptName(patient.getName());
             String parsedDate = parseOriginDate(patient.getBirthdate());
-            BriefPatientInfo briefPatientInfo = new BriefPatientInfo(patient.getPatientId(), patient.getName(), parsedDate, patient.getSex());
+            BriefPatientInfo briefPatientInfo = new BriefPatientInfo(patient.getPatientId(), decryptedName, parsedDate, patient.getSex());
             briefPatientInfoList.add(briefPatientInfo);
         }
         return briefPatientInfoList;
@@ -127,16 +147,25 @@ public class YsjdService {
         return sdf.format(birthdate);
     }
 
-    public Optional<Patient> findPatientInfo(Long id) {
-        return patientRepository.findById(id);
+    public Patient findPatientInfo(Long id) throws Exception {
+
+        Optional<Patient> optionalPatient = patientRepository.findById(id);
+        Patient patient = optionalPatient.orElseGet(() -> null);
+        if(patient != null){
+            patient.setName(decryptName(patient.getName()));
+        }
+
+        return patient;
     }
 
     public String createSimulation(Long id, String name) {
 
-        Optional<Patient> patient = patientRepository.findById(id);
+        Optional<Patient> optionalPatient = patientRepository.findById(id);
+        Patient patient = optionalPatient.orElseGet(() -> null);
 
-        if(patient.isPresent()){
+        if(patient != null){
             try{
+                patient.setName(decryptName(patient.getName()));
                 String simul = simulationService.callExternalApi1(convertObjectToJson(patient)).block();
                 simul = parsingSimulationOutput(simul);
 
@@ -160,11 +189,11 @@ public class YsjdService {
 
 
 
-    public String convertObjectToJson(Optional<Patient> optionalPatient) {
+    public String convertObjectToJson(Patient patient) {
         try {
 
             // 값이 있는 경우 해당 값을 사용하고, 없는 경우 람다 표현식으로 기본값 제공
-            Patient patient = optionalPatient.orElseGet(() -> null);
+            //Patient patient = optionalPatient.orElseGet(() -> null);
 
             Date date = null;
 
@@ -205,9 +234,10 @@ public class YsjdService {
         return null;
     }
 
-    public byte[] saveSimulationResult(Long id, String scenario) {
+    public String saveSimulationResult(Long id, String scenario) {
 
         Simulation simulation = new Simulation();
+        Simulation savedSimulation = null;
 
         // Frame 설정
         if (id != null) {
@@ -216,14 +246,33 @@ public class YsjdService {
         }
 
         simulation.setScenario(scenario);
-        Simulation savedSimulation = simulationRepository.save(simulation);
 
-        Long patientId = savedSimulation.getPatientId().getPatientId();
+        //해당 환자가 이미 simulation 결과가 있다면 update
+        List<Simulation> simulationList = simulationRepository.findByPatientId(simulation.getPatientId().getPatientId());
 
-        //QR코드 id어떤거 전달할지 결정하기
-        byte[] qrcode = createQRCode(patientId);
+        System.out.println("hello");
+        System.out.println(simulationList);
 
-        return qrcode;
+        if(!simulationList.isEmpty()){
+            System.out.println(simulationList.getFirst().getPatientId());
+
+            //해당 환자 update()
+            Simulation existingSimulation = simulationList.getLast();
+            existingSimulation.setScenario(scenario);
+
+            simulationRepository.save(existingSimulation);
+
+            System.out.println("hello2");
+
+        }
+        //해당 환자가 simulation 결과가 없으면 save
+        else{
+            simulationRepository.save(simulation);
+
+            System.out.println("hello3");
+        }
+
+        return "Success";
 
     }
 
@@ -257,6 +306,10 @@ public class YsjdService {
         try{
 
             Patient patient = optionalPatient.orElseGet(() -> null);
+            if(patient != null){
+                patient.setName(decryptName(patient.getName()));
+            }
+
             String patientName = patient.getName();
 
             Simulation simulation = simulationList.get(0);

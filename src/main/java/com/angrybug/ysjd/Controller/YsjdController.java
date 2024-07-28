@@ -78,13 +78,13 @@ public class YsjdController {
 
     //API3. 환자 리스트 반환
     @GetMapping("/simulation/info/{id}")
-    public ResponseEntity<Optional<Patient>> findPatientInfo(@PathVariable Long id)
+    public ResponseEntity<Patient> findPatientInfo(@PathVariable Long id)
     {
 
         try{
-            Optional<Patient> patient = ysjdService.findPatientInfo(id);
+           Patient patient = ysjdService.findPatientInfo(id);
 
-            if (patient.isPresent()) {
+            if (patient != null) {
                 return ResponseEntity.ok(patient);
             }
             else {
@@ -115,7 +115,7 @@ public class YsjdController {
 
     //API5. 시뮬레이션 선택 결과저장
     @PostMapping("/simulation/selected")
-    public ResponseEntity<byte[]> saveSimulationResult(@RequestBody String jsonData) {
+    public ResponseEntity<String> saveSimulationResult(@RequestBody String jsonData) {
 
         try {
             // JSON 문자열을 DTO로 변환
@@ -125,9 +125,9 @@ public class YsjdController {
             // DTO 객체의 test 필드를 JSON 문자열로 설정
             String tempScenario = objectMapper.writeValueAsString(simulationResult.getScenario());
 
-            byte[] qrcode = ysjdService.saveSimulationResult(simulationResult.getId(), tempScenario);
+            String result  = ysjdService.saveSimulationResult(simulationResult.getId(), tempScenario);
 
-            return ResponseEntity.ok(qrcode);
+            return ResponseEntity.ok(result);
 
         } catch (Exception e) {
             return null;
